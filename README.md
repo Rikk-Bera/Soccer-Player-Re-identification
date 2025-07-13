@@ -12,8 +12,11 @@ This project implements a grid-based tracking system for football players using 
 ## Key Features
 
 - Player detection using a pretrained YOLOv8 model.
+  
 - Grid-based spatial re-identification logic.
+  
 - Colour-coded bounding boxes in output video.
+
 
 ## How to Run
 
@@ -28,10 +31,14 @@ This project implements a grid-based tracking system for football players using 
 pip install ultralytics opencv-python numpy
 
 ## Update paths in FPRI.py if needed:
+
 model = YOLO("path/to/best.pt")
+
 cap = cv2.VideoCapture("path/to/input_video.mp4")
 
+
 ## Run the script:
+
 python FPRI.py
 
 
