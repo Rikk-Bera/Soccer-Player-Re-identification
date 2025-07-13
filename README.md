@@ -49,7 +49,9 @@ pip install ultralytics opencv-python numpy
 ## Parameters in Script
 
 -GRID_SIZE = 1000: Used to create a 1000x1000 grid overlay for spatial tracking.
+
 -MAX_MISSING_FRAMES = 20: Player ID is retained for 20 missing frames.
+
 -POSITION_THRESHOLD = 50: Grid-cell distance threshold for re-identification.
 
 ## The script outputs:
