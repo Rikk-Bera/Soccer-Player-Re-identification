@@ -69,8 +69,11 @@ pip install ultralytics opencv-python numpy
 ## The script outputs:
 
 A video (output_tracked_video.mp4) with bounding boxes and IDs for each player.
+
 Real-time display of tracking (cv2.imshow).
+
 
 Notes
 Only the "Player" class (class ID 2) is tracked with IDs.
+
 Other classes (Ball, Goalkeeper, Referee) are detected but not tracked.
