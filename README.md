@@ -78,6 +78,9 @@ A video (output_tracked_video.mp4) with bounding boxes and IDs for each player.
 
 Real-time display of tracking (cv2.imshow).
 
+## 🎥 Output Preview
+
+![Demo](media/output.gif)
 
 Notes
 
