@@ -74,6 +74,7 @@ Real-time display of tracking (cv2.imshow).
 
 
 Notes
+
 Only the "Player" class (class ID 2) is tracked with IDs.
 
 Other classes (Ball, Goalkeeper, Referee) are detected but not tracked.
