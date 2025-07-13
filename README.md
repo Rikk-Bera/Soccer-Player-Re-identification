@@ -45,10 +45,15 @@ python FPRI.py
 ## Dependencies
 
 Library         	Version (Recommended)
+
 Python	     >=        3.8
+
 OpenCV	     >=        4.5
+
 NumPy	       >=        1.20
+
 Ultralytics  >=        8.0 (YOLOv8)
+
 
 ## You can install them all using:
 pip install ultralytics opencv-python numpy
