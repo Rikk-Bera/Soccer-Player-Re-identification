@@ -78,12 +78,10 @@ A video (output_tracked_video.mp4) with bounding boxes and IDs for each player.
 
 Real-time display of tracking (cv2.imshow).
 
-## Output Preview
-
 ![Demo](media/output.gif)
 
-Notes
+## Notes
 
-Only the "Player" class (class ID 2) is tracked with IDs.
+-Only the "Player" class (class ID 2) is tracked with IDs.
 
-Other classes (Ball, Goalkeeper, Referee) are detected but not tracked.
+-Other classes (Ball, Goalkeeper, Referee) are detected but not tracked.
