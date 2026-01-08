@@ -2,20 +2,22 @@
 
 ## Approach and Methodology
 
-This project implements a player tracking system using a YOLOv8 model fine-tuned to detect football entities—players, goalkeepers, referees, and the ball. Here I use a **grid-based re-identification** strategy to assign consistent IDs to players across video frames without using complex appearance-based models.
+This project implements a player tracking system using a YOLOv11 model fine-tuned to detect football entities—players, goalkeepers, referees, and the ball.
 
 ### Step-by-step Overview:
-
-1. **Object Detection**:  
-   YOLOv8 (`best.pt`) detects objects in each frame.
-
-2. **Filtering**:  
+1. **Video to dataset conversion**:
+   Used roboflow to devide video into multiple frame.
+   
+2. **Dataset preprocessing and augmentation**:
+   did preprocessing on each frame of the vide.
+   
+3. **Object Detection**:  
+   YOLOv11 detects objects in each frame.
+   
+4. **Filtering**:  
    Only class `2` (Player) is used for tracking. Other classes are displayed without ID assignment.
-
-3. **Grid-based Re-identification**:  
-   Each player's bounding box center is mapped to a 1000x1000 grid. If a detected player is near a previously tracked player (in grid space) and within a time threshold, I assign the same ID.
-
-4. **Tracking Maintenance**:  
+   
+5. **Tracking Maintenance**:  
    Each tracked player is stored with `last_seen` and `center`. IDs are reassigned if a player is not seen for more than `MAX_MISSING_FRAMES`.
 
 ---
