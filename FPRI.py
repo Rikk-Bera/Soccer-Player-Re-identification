@@ -1,79 +1,117 @@
 import cv2
 import numpy as np
+from shapely.geometry import Point, Polygon
 from ultralytics import YOLO
-model = YOLO("D:/VS Code/football player re-identification(2)/best.pt")
-CLASS_NAMES = {0: "Ball", 1: "Goalkeeper", 2: "Player", 3: "Referee"}
-cap = cv2.VideoCapture("D:/VS Code/football player re-identification(2)/15sec_input_720p.mp4")
 
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+# PATHS
+
+MODEL_PATH = "runs/detect/train/weights/best.pt"
+VIDEO_SOURCE = "D:/VS Code/practise python/15sec_input_720p.mp4"
+OUTPUT_VIDEO = "output_player.mp4"
+
+# LOAD MODEL & VIDEO
+
+model = YOLO(MODEL_PATH)
+cap = cv2.VideoCapture(VIDEO_SOURCE)
+
 fps = int(cap.get(cv2.CAP_PROP_FPS))
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-out = cv2.VideoWriter("D:/VS Code/football player re-identification(2)/output_tracked_video.mp4", fourcc, fps, (width, height))
-GRID_SIZE = 1000
+# FULL-SCREEN ROI
 
-# Tracking structures
-player_id_counter = 0
-player_tracks = {}  
-frame_count = 0
+ROI_POINTS = [
+    (0, 0),
+    (w, 0),
+    (w, h),
+    (0, h)
+]
+roi_polygon = Polygon(ROI_POINTS)
 
-MAX_MISSING_FRAMES = 20
-POSITION_THRESHOLD = 50 
+# VIDEO WRITER
 
-def get_grid_position(center, frame_shape):
-    h, w = frame_shape[:2]
-    gx = int(center[0] * GRID_SIZE / w)
-    gy = int(center[1] * GRID_SIZE / h)
-    return gx, gy
-def match_player(center, frame_shape):
-    gx, gy = get_grid_position(center, frame_shape)
-    for pid, data in player_tracks.items():
-        prev_gx, prev_gy = get_grid_position(data['center'], frame_shape)
-        dist = np.linalg.norm([gx - prev_gx, gy - prev_gy])
-        if dist < POSITION_THRESHOLD and frame_count - data['last_seen'] <= MAX_MISSING_FRAMES:
-            return pid
-    return None
+out = cv2.VideoWriter(
+    OUTPUT_VIDEO,
+    cv2.VideoWriter_fourcc(*"mp4v"),
+    fps if fps > 0 else 25,
+    (w, h)
+)
+
+# TRACKING VARIABLES
+
+track_last_state = {}
+counted_ids = set()
+cross_count = 0
+# PROCESS VIDEO
 
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
-    frame_count += 1
-    results = model(frame)[0]
-    detections = []
-    for det in results.boxes.data:
-        x1, y1, x2, y2, conf, cls = det
-        cls = int(cls)
-        if cls == 2: 
-            center = ((x1 + x2) / 2, (y1 + y2) / 2)
-            matched_id = match_player(center, frame.shape)
-            if matched_id is None:
-                matched_id = player_id_counter
-                player_id_counter += 1
-            player_tracks[matched_id] = {'center': center, 'last_seen': frame_count}
-            bbox = [x1.item(), y1.item(), x2.item(), y2.item()]
-            detections.append((bbox, cls, matched_id))
-        elif cls in CLASS_NAMES:
-            bbox = [x1.item(), y1.item(), x2.item(), y2.item()]
-            detections.append((bbox, cls, -1))  
 
-    for bbox, cls, obj_id in detections:
-        x1, y1, x2, y2 = map(int, bbox)
-        if cls == 2:
-            label = f"Player {obj_id}"
+    results = model.track(
+        frame,
+        persist=True,
+        tracker="botsort.yaml",
+        conf=0.4,
+        iou=0.5
+    )
+
+    if results and results[0].boxes.id is not None:
+        boxes = results[0].boxes.xyxy.cpu().numpy()
+        ids = results[0].boxes.id.cpu().numpy()
+
+        for box, track_id in zip(boxes, ids):
+            track_id = int(track_id)
+            x1, y1, x2, y2 = map(int, box)
+            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+
+            inside = roi_polygon.contains(Point(cx, cy))
+
+            if track_id not in track_last_state:
+                track_last_state[track_id] = False
+
+            # Count unique people
+            if not track_last_state[track_id] and inside and track_id not in counted_ids:
+                cross_count += 1
+                counted_ids.add(track_id)
+
+            track_last_state[track_id] = inside
+
+            # Draw bounding box
             color = (0, 255, 0)
-        else:
-            label = f"{CLASS_NAMES[cls]}"
-            color = (0, 0, 255)
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-        cv2.putText(frame, label, (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(
+                frame,
+                f"ID {track_id}",
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                color,
+                2
+            )
+            cv2.circle(frame, (cx, cy), 4, (255, 255, 0), -1)
 
-    cv2.imshow("Grid-based Player Tracking", frame)
-    out.write(frame) 
-    if cv2.waitKey(1) & 0xFF == 27:
-        break
+    # Draw ROI (full frame)
+    cv2.polylines(frame, [np.array(ROI_POINTS)], True, (255, 0, 0), 2)
+
+    # Draw count
+    cv2.putText(
+        frame,
+        f"People Count: {cross_count}",
+        (30, 50),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.2,
+        (0, 0, 255),
+        3
+    )
+
+    out.write(frame)
+
+# CLEANUP
+
 cap.release()
 out.release()
 cv2.destroyAllWindows()
+
+print("✅ Processing complete. Output saved:", OUTPUT_VIDEO)
